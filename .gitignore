@@ -1,0 +1,12 @@
+__pychache__/
+*.py[cod]
+venv/
+.env
+
+data/
+models/
+
+.ipynb_checkpoints
+
+mlruns/
+.trash/
