@@ -3,6 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import argparse
+import joblib
+import yaml
 import os
 
 from sklearn.model_selection import train_test_split
@@ -20,10 +22,21 @@ import mlflow.sklearn
 def main():
     # 1. Налаштування CLI аргументів (Крок 5.1)
     parser = argparse.ArgumentParser(description="Train Graduate Salary Model")
-    parser.add_argument("--n_estimators", type=int, default=100, help="Number of trees")
-    parser.add_argument("--max_depth", type=int, default=5, help="Max depth of trees")
+    parser.add_argument("--n_estimators", type=int, help="Number of trees")
+    parser.add_argument("--max_depth", type=int, help="Max depth of trees")
     parser.add_argument("--random_state", type=int, default=42, help="Random state")
+    parser.add_argument("input_dir")  # data/prepared
+    parser.add_argument("output_dir")  # data/models
     args = parser.parse_args()
+
+    if args.n_estimators is None or args.max_depth is None:
+        with open("params.yaml") as f:
+            params = yaml.safe_load(f)
+        n_estimators = params["train"]["n_estimators"]
+        max_depth = params["train"]["max_depth"]
+    else:
+        n_estimators = args.n_estimators
+        max_depth = args.max_depth
 
     # 2. Завантаження даних
     data_path = "data/raw/global_graduate_employability_index.csv"
@@ -80,8 +93,8 @@ def main():
 
         # Навчання моделі (Крок 4.5)
         model = RandomForestRegressor(
-            n_estimators=args.n_estimators,
-            max_depth=args.max_depth,
+            n_estimators=n_estimators,
+            max_depth=max_depth,
             random_state=args.random_state
         )
         model.fit(X_train_processed, y_train)
@@ -136,6 +149,12 @@ def main():
         plt.close()
 
         # 8. Логування моделі
+        # 8a. Збереження моделі для DVC
+        os.makedirs(args.output_dir, exist_ok=True)
+        model_path = os.path.join(args.output_dir, "random_forest_model.pkl")
+        joblib.dump(model, model_path)
+
+        # 8b. Логування моделі в MLflow
         mlflow.sklearn.log_model(model, "random_forest_model")
 
         print(f"Run completed. Test RMSE: {test_rmse:.2f}, Test MAE: {test_mae:.2f}, R2: {test_r2:.2f}")

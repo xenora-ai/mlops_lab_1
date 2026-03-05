@@ -1,0 +1,20 @@
+stages:
+  prepare:
+    cmd: python src/prepare.py data/raw/global_graduate_employability_index.csv data/prepared
+    deps:
+      - data/raw/global_graduate_employability_index.csv
+      - src/prepare.py
+    outs:
+      - data/prepared
+
+  train:
+    cmd: python src/train.py data/prepared data/models
+    deps:
+      - data/prepared
+      - src/train.py
+      - params.yaml
+    outs:
+      - data/models
+    params:
+      - train.n_estimators
+      - train.max_depth
