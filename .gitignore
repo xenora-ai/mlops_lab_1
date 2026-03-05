@@ -3,7 +3,10 @@ __pychache__/
 venv/
 .env
 
-data/
+data/*
+!data/**/*.dvc
+!data/**/.gitkeep
+!data/raw/
 models/
 
 .ipynb_checkpoints

@@ -1,0 +1,5 @@
+outs:
+- md5: 2dc3df4112574c2b1d28133ff96e5860
+  size: 611569
+  hash: md5
+  path: global_graduate_employability_index.csv
