@@ -37,6 +37,9 @@ jobs:
       #   env:
       #     DVC_REMOTE_TOKEN: ${{ secrets.DVC_REMOTE_TOKEN }}
 
+      - name: Prepare data
+        run: python src/prepare.py
+
       - name: Train and Optimize model
         run: |
           python src/optimize.py hpo.n_trials=5 mlflow.tracking_uri="file:./mlruns"
