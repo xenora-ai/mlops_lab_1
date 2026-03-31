@@ -26,7 +26,9 @@ def set_global_seed(seed: int) -> None:
     np.random.seed(seed)
 
 
-def load_processed_data(prepared_dir: str) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+def load_processed_data(
+    prepared_dir: str,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
     Завантажує 4 попередньо розділені файли (X_train, y_train, X_test, y_test) з вказаної директорії.
     """
@@ -40,7 +42,9 @@ def load_processed_data(prepared_dir: str) -> Tuple[np.ndarray, np.ndarray, np.n
 
         return X_train, X_test, y_train, y_test
     except FileNotFoundError as e:
-        raise FileNotFoundError(f"Не знайдено файли даних у директорії {abs_dir}. Перевірте config.yaml. Деталі: {e}")
+        raise FileNotFoundError(
+            f"Не знайдено файли даних у директорії {abs_dir}. Перевірте config.yaml. Деталі: {e}"
+        )
 
 
 def build_model(model_type: str, params: Dict[str, Any], seed: int) -> Any:
@@ -51,8 +55,14 @@ def build_model(model_type: str, params: Dict[str, Any], seed: int) -> Any:
     raise ValueError(f"Unknown model.type='{model_type}'. Expecting 'random_forest'.")
 
 
-def evaluate(model: Any, X_train: np.ndarray, y_train: np.ndarray, X_test: np.ndarray, y_test: np.ndarray,
-             metric: str) -> float:
+def evaluate(
+    model: Any,
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+    metric: str,
+) -> float:
     """Навчає модель та обчислює задану метрику для регресії."""
     model.fit(X_train, y_train)
     y_pred = model.predict(X_test)
@@ -65,7 +75,9 @@ def evaluate(model: Any, X_train: np.ndarray, y_train: np.ndarray, X_test: np.nd
     raise ValueError("Unsupported metrics. Use 'r2' or 'rmse'.")
 
 
-def evaluate_cv(model: Any, X: np.ndarray, y: np.ndarray, metric: str, seed: int, n_splits: int = 5) -> float:
+def evaluate_cv(
+    model: Any, X: np.ndarray, y: np.ndarray, metric: str, seed: int, n_splits: int = 5
+) -> float:
     """Проводить крос-валідацію. Змінено StratifiedKFold на KFold для неперервних величин."""
     cv = KFold(n_splits=n_splits, shuffle=True, random_state=seed)
     scores = []
@@ -80,7 +92,9 @@ def evaluate_cv(model: Any, X: np.ndarray, y: np.ndarray, metric: str, seed: int
     return float(np.mean(scores))
 
 
-def make_sampler(sampler_name: str, seed: int, grid_space: Dict[str, Any] = None) -> optuna.samplers.BaseSampler:
+def make_sampler(
+    sampler_name: str, seed: int, grid_space: Dict[str, Any] = None
+) -> optuna.samplers.BaseSampler:
     """Створює об'єкт семплера для Optuna."""
     sampler_name = sampler_name.lower()
     if sampler_name == "tpe":
@@ -95,14 +109,23 @@ def make_sampler(sampler_name: str, seed: int, grid_space: Dict[str, Any] = None
     raise ValueError("sampler should be: tpe, random, grid")
 
 
-def suggest_params(trial: optuna.Trial, model_type: str, cfg: DictConfig) -> Dict[str, Any]:
+def suggest_params(
+    trial: optuna.Trial, model_type: str, cfg: DictConfig
+) -> Dict[str, Any]:
     """Генерує параметри для поточної спроби Optuna на основі Hydra Groups."""
     if model_type == "random_forest":
         return {
-            "n_estimators": trial.suggest_int("n_estimators", cfg.model.n_estimators.low, cfg.model.n_estimators.high),
-            "max_depth": trial.suggest_int("max_depth", cfg.model.max_depth.low, cfg.model.max_depth.high),
-            "min_samples_split": trial.suggest_int("min_samples_split", cfg.model.min_samples_split.low,
-                                                   cfg.model.min_samples_split.high),
+            "n_estimators": trial.suggest_int(
+                "n_estimators", cfg.model.n_estimators.low, cfg.model.n_estimators.high
+            ),
+            "max_depth": trial.suggest_int(
+                "max_depth", cfg.model.max_depth.low, cfg.model.max_depth.high
+            ),
+            "min_samples_split": trial.suggest_int(
+                "min_samples_split",
+                cfg.model.min_samples_split.low,
+                cfg.model.min_samples_split.high,
+            ),
         }
 
     raise ValueError(f"Unknown model.type='{model_type}'.")
@@ -127,9 +150,18 @@ def objective_factory(cfg: DictConfig, X_train, X_test, y_train, y_test):
             if cfg.hpo.use_cv:
                 X = np.concatenate([X_train, X_test], axis=0)
                 y = np.concatenate([y_train, y_test], axis=0)
-                score = evaluate_cv(model, X, y, metric=cfg.hpo.metric, seed=cfg.seed, n_splits=cfg.hpo.cv_folds)
+                score = evaluate_cv(
+                    model,
+                    X,
+                    y,
+                    metric=cfg.hpo.metric,
+                    seed=cfg.seed,
+                    n_splits=cfg.hpo.cv_folds,
+                )
             else:
-                score = evaluate(model, X_train, y_train, X_test, y_test, metric=cfg.hpo.metric)
+                score = evaluate(
+                    model, X_train, y_train, X_test, y_test, metric=cfg.hpo.metric
+                )
 
             mlflow.log_metric(cfg.hpo.metric, score)
             return score
@@ -141,7 +173,9 @@ def register_model_if_enabled(model_uri: str, model_name: str, stage: str) -> No
     """Реєструє найкращу модель у Model Registry."""
     client = mlflow.tracking.MlflowClient()
     mv = mlflow.register_model(model_uri, model_name)
-    client.transition_model_version_stage(name=model_name, version=mv.version, stage=stage)
+    client.transition_model_version_stage(
+        name=model_name, version=mv.version, stage=stage
+    )
     client.set_model_version_tag(model_name, mv.version, "registered_by", "lab3")
     client.set_model_version_tag(model_name, mv.version, "stage", stage)
 
@@ -162,7 +196,9 @@ def main(cfg: DictConfig) -> None:
         if "grid_space" in cfg.hpo:
             grid_space = OmegaConf.to_container(cfg.hpo.grid_space, resolve=True)
         else:
-            raise ValueError("Для sampler='grid' необхідно визначити hpo.grid_space у файлі hpo/grid.yaml")
+            raise ValueError(
+                "Для sampler='grid' необхідно визначити hpo.grid_space у файлі hpo/grid.yaml"
+            )
 
     sampler = make_sampler(cfg.hpo.sampler, seed=cfg.seed, grid_space=grid_space)
 
@@ -173,7 +209,9 @@ def main(cfg: DictConfig) -> None:
         mlflow.set_tag("seed", cfg.seed)
 
         # Збереження конфігурації як артефакту
-        mlflow.log_dict(OmegaConf.to_container(cfg, resolve=True), "config_resolved.json")
+        mlflow.log_dict(
+            OmegaConf.to_container(cfg, resolve=True), "config_resolved.json"
+        )
 
         study = optuna.create_study(direction=cfg.hpo.direction, sampler=sampler)
         objective = objective_factory(cfg, X_train, X_test, y_train, y_test)
@@ -186,8 +224,12 @@ def main(cfg: DictConfig) -> None:
         mlflow.log_dict(best_trial.params, "best_params.json")
 
         # Навчання фінальної найкращої моделі
-        best_model = build_model(cfg.model.type, params=best_trial.params, seed=cfg.seed)
-        best_score = evaluate(best_model, X_train, y_train, X_test, y_test, metric=cfg.hpo.metric)
+        best_model = build_model(
+            cfg.model.type, params=best_trial.params, seed=cfg.seed
+        )
+        best_score = evaluate(
+            best_model, X_train, y_train, X_test, y_test, metric=cfg.hpo.metric
+        )
         mlflow.log_metric(f"final_{cfg.hpo.metric}", best_score)
 
         os.makedirs("models", exist_ok=True)
@@ -196,7 +238,7 @@ def main(cfg: DictConfig) -> None:
 
         metrics_dict = {
             "r2": float(best_score),
-            "best_r2_in_hpo": float(best_trial.value)
+            "best_r2_in_hpo": float(best_trial.value),
         }
         with open("metrics.json", "w") as f:
             json.dump(metrics_dict, f, indent=4)
@@ -204,7 +246,9 @@ def main(cfg: DictConfig) -> None:
         y_pred = best_model.predict(X_test)
         plt.figure(figsize=(10, 6))
         plt.scatter(y_test, y_pred, alpha=0.5)
-        plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--', lw=2)
+        plt.plot(
+            [y_test.min(), y_test.max()], [y_test.min(), y_test.max()], "r--", lw=2
+        )
         plt.xlabel("Actual")
         plt.ylabel("Predicted")
         plt.title("Actual vs Predicted Salary")
@@ -215,7 +259,9 @@ def main(cfg: DictConfig) -> None:
 
         if cfg.mlflow.register_model:
             model_uri = f"runs:/{parent_run.info.run_id}/model"
-            register_model_if_enabled(model_uri, cfg.mlflow.model_name, stage=cfg.mlflow.stage)
+            register_model_if_enabled(
+                model_uri, cfg.mlflow.model_name, stage=cfg.mlflow.stage
+            )
 
 
 @hydra.main(version_base=None, config_path="../config", config_name="config")

@@ -47,35 +47,43 @@ def main():
     df = pd.read_csv(data_path)
 
     # Видаляємо Graduation_Year та цільову зміну
-    X = df.drop(columns=['Average_Starting_Salary_USD', 'Graduation_Year'])
-    y = df['Average_Starting_Salary_USD']
+    X = df.drop(columns=["Average_Starting_Salary_USD", "Graduation_Year"])
+    y = df["Average_Starting_Salary_USD"]
 
     # 3. Розділення вибірки (Крок 4.3)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
 
     # 4. Визначення ознак для обробки
-    categorical_features = X.select_dtypes(include=['object']).columns.tolist()
-    ordinal_feature = ['Degree_Level']
-    nominal_features = [col for col in categorical_features if col not in ordinal_feature]
+    categorical_features = X.select_dtypes(include=["object"]).columns.tolist()
+    ordinal_feature = ["Degree_Level"]
+    nominal_features = [
+        col for col in categorical_features if col not in ordinal_feature
+    ]
     degree_order = [["Bachelor", "Master", "PhD"]]
 
     # 5. Створення пайплайнів обробки
-    ordinal_pipeline = Pipeline(steps=[
-        ("imputer", SimpleImputer(strategy="most_frequent")),
-        ("ordinal", OrdinalEncoder(categories=degree_order))
-    ])
+    ordinal_pipeline = Pipeline(
+        steps=[
+            ("imputer", SimpleImputer(strategy="most_frequent")),
+            ("ordinal", OrdinalEncoder(categories=degree_order)),
+        ]
+    )
 
-    nominal_pipeline = Pipeline(steps=[
-        ("imputer", SimpleImputer(strategy="most_frequent")),
-        ("onehot", OneHotEncoder(handle_unknown="ignore", sparse_output=False))
-    ])
+    nominal_pipeline = Pipeline(
+        steps=[
+            ("imputer", SimpleImputer(strategy="most_frequent")),
+            ("onehot", OneHotEncoder(handle_unknown="ignore", sparse_output=False)),
+        ]
+    )
 
     preprocessor = ColumnTransformer(
         transformers=[
-            ('ord', ordinal_pipeline, ordinal_feature),
-            ("nom", nominal_pipeline, nominal_features)
+            ("ord", ordinal_pipeline, ordinal_feature),
+            ("nom", nominal_pipeline, nominal_features),
         ],
-        remainder='passthrough'
+        remainder="passthrough",
     )
 
     X_train_processed = preprocessor.fit_transform(X_train)
@@ -95,7 +103,7 @@ def main():
         model = RandomForestRegressor(
             n_estimators=n_estimators,
             max_depth=max_depth,
-            random_state=args.random_state
+            random_state=args.random_state,
         )
         model.fit(X_train_processed, y_train)
 
@@ -127,7 +135,7 @@ def main():
         plt.figure(figsize=(10, 8))
         importances = model.feature_importances_
         indices = np.argsort(importances)[-10:]  # Топ-10 ознак
-        plt.barh(range(len(indices)), importances[indices], align='center')
+        plt.barh(range(len(indices)), importances[indices], align="center")
         plt.yticks(range(len(indices)), [feature_names[i] for i in indices])
         plt.title("Top 10 Feature Importances")
 
@@ -138,10 +146,12 @@ def main():
 
         plt.figure(figsize=(8, 6))
         sns.scatterplot(x=y_test, y=y_test_pred, alpha=0.5)
-        plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--', lw=2)
-        plt.xlabel('Actual Salary')
-        plt.ylabel('Predicted Salary')
-        plt.title('Predicted vs Actual')
+        plt.plot(
+            [y_test.min(), y_test.max()], [y_test.min(), y_test.max()], "r--", lw=2
+        )
+        plt.xlabel("Actual Salary")
+        plt.ylabel("Predicted Salary")
+        plt.title("Predicted vs Actual")
 
         plot_path = "predicted_vs_actual.png"
         plt.savefig(plot_path)
@@ -157,7 +167,9 @@ def main():
         # 8b. Логування моделі в MLflow
         mlflow.sklearn.log_model(model, "random_forest_model")
 
-        print(f"Run completed. Test RMSE: {test_rmse:.2f}, Test MAE: {test_mae:.2f}, R2: {test_r2:.2f}")
+        print(
+            f"Run completed. Test RMSE: {test_rmse:.2f}, Test MAE: {test_mae:.2f}, R2: {test_r2:.2f}"
+        )
 
 
 if __name__ == "__main__":

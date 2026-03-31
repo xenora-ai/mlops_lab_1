@@ -18,14 +18,18 @@ def test_data_schema():
 
     assert y.iloc[:, 0].notna().all(), "Цільова змінна містить порожні значення (NaN)"
 
-    assert X.shape[0] == y.shape[0], "Кількість ознак не відповідає кількості цільових значень"
+    assert (
+        X.shape[0] == y.shape[0]
+    ), "Кількість ознак не відповідає кількості цільових значень"
 
 
 def test_artifacts_exist():
     """Перевірка наявності створених артефактів[cite: 96]."""
     artifacts = ["model.pkl", "metrics.json", "confusion_matrix.png"]
     for artifact in artifacts:
-        assert os.path.exists(artifact), f"Артефакт {artifact} не знайдено після тренування"
+        assert os.path.exists(
+            artifact
+        ), f"Артефакт {artifact} не знайдено після тренування"
 
 
 def test_quality_gate_r2():
@@ -38,4 +42,6 @@ def test_quality_gate_r2():
 
     r2 = float(metrics.get("r2", 0))
 
-    assert r2 >= threshold, f"Quality Gate не пройдено: R^2 ({r2:.4f}) нижче за поріг ({threshold:.2f})"
+    assert (
+        r2 >= threshold
+    ), f"Quality Gate не пройдено: R^2 ({r2:.4f}) нижче за поріг ({threshold:.2f})"
