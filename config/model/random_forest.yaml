@@ -1,4 +1,4 @@
 type: "random_forest"
-n_estimators: {low: 50, high: 200}
+n_estimators: {low: 50, high: 150}
 max_depth: {low: 2, high: 30}
-min_samples_split: {low: 2, high: 10}
+min_samples_split: {low: 5, high: 10}
