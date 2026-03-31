@@ -38,7 +38,7 @@ jobs:
       #     DVC_REMOTE_TOKEN: ${{ secrets.DVC_REMOTE_TOKEN }}
 
       - name: Prepare data
-        run: python src/prepare.py
+        run: python src/prepare.py data/raw/global_graduate_employability_index.csv
 
       - name: Train and Optimize model
         run: |
