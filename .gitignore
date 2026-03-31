@@ -13,3 +13,14 @@ models/
 
 mlruns/
 .trash/
+mlartifacts/
+
+outputs/
+.hydra/
+
+mlflow.db
+*.log
+
+!metrics.json
+!confusion_matrix.png
+!models/best_model.pkl

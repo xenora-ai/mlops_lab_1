@@ -1,0 +1,76 @@
+name: Model CI (Train, Test, Report)
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  pull-requests: write # Потрібно для того, щоб CML міг залишати коментарі
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Lint and Format check
+        run: |
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          black . --check
+
+      # Якщо налаштовано DVC remote, розкоментувати цей блок
+      # - name: DVC pull data
+      #   run: dvc pull
+      #   env:
+      #     DVC_REMOTE_TOKEN: ${{ secrets.DVC_REMOTE_TOKEN }}
+
+      - name: Train and Optimize model
+        run: |
+          python src/optimize.py hpo.n_trials=5 
+
+      - name: Run tests (Quality Gate)
+        env:
+          R2_THRESHOLD: "0.80" # Встановлюємо поріг для тесту, який ми написали раніше
+        run: |
+          pytest -v
+
+      - name: Upload model artifact (main only)
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: actions/upload-artifact@v4
+        with:
+          name: salary-prediction-model
+          path: models/best_model.pkl
+
+      - name: Create CML report (PR only)
+        if: github.event_name == 'pull_request'
+        env:
+          REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "## 📊 Результати навчання моделі" > report.md
+          echo "### Метрики (metrics.json):" >> report.md
+          echo "\`\`\`json" >> report.md
+          cat metrics.json >> report.md
+          echo "\`\`\`" >> report.md
+          
+          echo "### 📈 Візуалізація" >> report.md
+          # Публікуємо графік як URL для відображення в GitHub
+          cml publish confusion_matrix.png --md >> report.md 
+          
+          echo "### 🛡️ Quality Gate" >> report.md
+          echo "Встановлений поріг R2: $R2_THRESHOLD" >> report.md
+          
+          # Створюємо коментар у Pull Request
+          cml comment create report.md

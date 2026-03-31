@@ -1,5 +1,7 @@
 import os
 import random
+import json
+import matplotlib.pyplot as plt
 from typing import Any, Dict, Tuple
 
 import joblib
@@ -191,6 +193,22 @@ def main(cfg: DictConfig) -> None:
         os.makedirs("models", exist_ok=True)
         joblib.dump(best_model, "models/best_model.pkl")
         mlflow.log_artifact("models/best_model.pkl")
+
+        metrics_dict = {
+            "r2": float(best_score),
+            "best_r2_in_hpo": float(best_trial.value)
+        }
+        with open("metrics.json", "w") as f:
+            json.dump(metrics_dict, f, indent=4)
+
+        y_pred = best_model.predict(X_test)
+        plt.figure(figsize=(10, 6))
+        plt.scatter(y_test, y_pred, alpha=0.5)
+        plt.plot([y_test.min(), y_test.max()], [y_test.min(), y_test.max()], 'r--', lw=2)
+        plt.xlabel("Actual")
+        plt.ylabel("Predicted")
+        plt.title("Actual vs Predicted Salary")
+        plt.savefig("confusion_matrix.png")
 
         if cfg.mlflow.log_model:
             mlflow.sklearn.log_model(best_model, artifact_path="model")
