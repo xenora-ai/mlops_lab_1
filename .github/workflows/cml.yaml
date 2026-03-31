@@ -39,7 +39,7 @@ jobs:
 
       - name: Train and Optimize model
         run: |
-          python src/optimize.py hpo.n_trials=5 
+          python src/optimize.py hpo.n_trials=5 mlflow.tracking_uri="file:./mlruns"
 
       - name: Run tests (Quality Gate)
         env:
