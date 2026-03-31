@@ -25,14 +25,13 @@ def test_data_schema():
 
 def test_artifacts_exist():
     """Перевірка наявності створених артефактів."""
-    artifacts = [
-        "models/best_model.pkl",
-        "metrics.json",
-        "confusion_matrix.png"
-    ]
+    artifacts = ["models/best_model.pkl", "metrics.json", "confusion_matrix.png"]
     for artifact in artifacts:
         import os
-        assert os.path.exists(artifact), f"Артефакт {artifact} не знайдено після тренування"
+
+        assert os.path.exists(
+            artifact
+        ), f"Артефакт {artifact} не знайдено після тренування"
 
 
 def test_quality_gate_r2():
