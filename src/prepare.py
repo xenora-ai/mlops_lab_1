@@ -7,6 +7,7 @@ from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
 
+
 def main():
     input_file = sys.argv[1]  # data/raw/global_graduate_employability_index.csv
     output_dir = sys.argv[2]  # data/prepared
@@ -54,6 +55,7 @@ def main():
         os.path.join(output_dir, "X_test.csv"), index=False)
     y_train.to_csv(os.path.join(output_dir, "y_train.csv"), index=False)
     y_test.to_csv(os.path.join(output_dir, "y_test.csv"), index=False)
+
 
 if __name__ == "__main__":
     main()

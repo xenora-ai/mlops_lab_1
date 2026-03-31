@@ -1,0 +1,6 @@
+n_trials: 20
+sampler: "tpe"
+metric: "r2"
+direction: "maximize"
+use_cv: false
+cv_folds: 5

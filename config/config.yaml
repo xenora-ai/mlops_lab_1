@@ -1,0 +1,26 @@
+defaults:
+  - model: random_forest
+  - hpo: optuna
+  - _self_
+
+seed: 42
+
+mlflow:
+  tracking_uri: "http://127.0.0.1:5000"
+  experiment_name: "HPO_Lab3_Salary"
+  log_model: true
+  register_model: true
+  model_name: "SalaryPrediction_Optimized"
+  stage: "Staging"
+
+data:
+  prepared_dir: "data/prepared"
+  train_x: "X_train.csv"
+  train_y: "y_train.csv"
+  test_x: "X_test.csv"
+  test_y: "y_test.csv"
+
+hydra:
+  run:
+    dir: .
+  output_subdir: null
