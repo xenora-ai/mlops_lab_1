@@ -26,13 +26,12 @@ def check_model_quality():
 
 with DAG(
     "ml_salary_prediction_pipeline",
-    # Використовуємо стандартний datetime замість days_ago
     default_args={
-        "start_date": datetime(2024, 1, 1),
+        "start_date": datetime(2026, 4, 2),
         "retries": 1,
         "retry_delay": timedelta(minutes=5),
     },
-    schedule_interval="@weekly",
+    schedule="@weekly",
     catchup=False,
 ) as dag:
     # 1. Перевірка доступності даних
