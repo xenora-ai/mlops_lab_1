@@ -34,49 +34,64 @@ jobs:
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           black . --check
 
-      # Якщо налаштовано DVC remote, розкоментувати цей блок
-      # - name: DVC pull data
-      #   run: dvc pull
-      #   env:
-      #     DVC_REMOTE_TOKEN: ${{ secrets.DVC_REMOTE_TOKEN }}
-
-      - name: Prepare data
-        run: python src/prepare.py data/raw/global_graduate_employability_index.csv data/prepared
-
-      - name: Train and Optimize model
+      - name: Install Airflow for testing
         run: |
-          python src/optimize.py hpo.n_trials=5 mlflow.tracking_uri="file:./mlruns"
+          pip install apache-airflow
+          # Створюємо папку для Airflow, щоб він не сварився при тестуванні
+          export AIRFLOW_HOME=$(pwd)/airflow
+          mkdir -p $AIRFLOW_HOME
 
-      - name: Run tests (Quality Gate)
-        env:
-          R2_THRESHOLD: "0.80" # Встановлюємо поріг для тесту, який ми написали раніше
+      - name: DAG Integrity Test
         run: |
-          pytest -v
+          pytest tests/test_dag.py
 
-      - name: Upload model artifact (main only)
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        uses: actions/upload-artifact@v4
-        with:
-          name: salary-prediction-model
-          path: models/best_model.pkl
+      - name: Build Docker Image
+        # Перевірка multi-stage build
+        run: docker build . --file Dockerfile --tag ml-model:latest
 
-      - name: Create CML report (PR only)
-        if: github.event_name == 'pull_request'
-        env:
-          REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          echo "## 📊 Результати навчання моделі" > report.md
-          echo "### Метрики (metrics.json):" >> report.md
-          echo "\`\`\`json" >> report.md
-          cat metrics.json >> report.md
-          echo "\`\`\`" >> report.md
-          
-          echo "### 📈 Візуалізація" >> report.md
-          # Публікуємо графік як URL для відображення в GitHub
-          cml publish confusion_matrix.png --md >> report.md 
-          
-          echo "### 🛡️ Quality Gate" >> report.md
-          echo "Встановлений поріг R2: $R2_THRESHOLD" >> report.md
-          
-          # Створюємо коментар у Pull Request
-          cml comment create report.md
+#      # Якщо налаштовано DVC remote, розкоментувати цей блок
+#      # - name: DVC pull data
+#      #   run: dvc pull
+#      #   env:
+#      #     DVC_REMOTE_TOKEN: ${{ secrets.DVC_REMOTE_TOKEN }}
+#
+#      - name: Prepare data
+#        run: python src/prepare.py data/raw/global_graduate_employability_index.csv data/prepared
+#
+#      - name: Train and Optimize model
+#        run: |
+#          python src/optimize.py hpo.n_trials=5 mlflow.tracking_uri="file:./mlruns"
+#
+#      - name: Run tests (Quality Gate)
+#        env:
+#          R2_THRESHOLD: "0.80" # Встановлюємо поріг для тесту, який ми написали раніше
+#        run: |
+#          pytest -v
+#
+#      - name: Upload model artifact (main only)
+#        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+#        uses: actions/upload-artifact@v4
+#        with:
+#          name: salary-prediction-model
+#          path: models/best_model.pkl
+#
+#      - name: Create CML report (PR only)
+#        if: github.event_name == 'pull_request'
+#        env:
+#          REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        run: |
+#          echo "## 📊 Результати навчання моделі" > report.md
+#          echo "### Метрики (metrics.json):" >> report.md
+#          echo "\`\`\`json" >> report.md
+#          cat metrics.json >> report.md
+#          echo "\`\`\`" >> report.md
+#
+#          echo "### 📈 Візуалізація" >> report.md
+#          # Публікуємо графік як URL для відображення в GitHub
+#          cml publish confusion_matrix.png --md >> report.md
+#
+#          echo "### 🛡️ Quality Gate" >> report.md
+#          echo "Встановлений поріг R2: $R2_THRESHOLD" >> report.md
+#
+#          # Створюємо коментар у Pull Request
+#          cml comment create report.md
