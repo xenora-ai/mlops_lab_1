@@ -27,7 +27,6 @@ def test_artifacts_exist():
     """Перевірка наявності створених артефактів."""
     artifacts = ["models/best_model.pkl", "metrics.json", "confusion_matrix.png"]
     for artifact in artifacts:
-        import os
 
         assert os.path.exists(
             artifact
